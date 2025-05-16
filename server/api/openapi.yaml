@@ -1,0 +1,196 @@
+openapi: 3.0.1
+info:
+  description: Weather API application that allows users to subscribe to weather updates
+    for their city.
+  title: Weather Forecast API
+  version: 1.0.0
+servers:
+- url: http://weatherapi.app/api
+- url: https://weatherapi.app/api
+tags:
+- description: Weather forecast operations
+  name: weather
+- description: Subscription management operations
+  name: subscription
+paths:
+  /weather:
+    get:
+      description: Returns the current weather forecast for the specified city using
+        WeatherAPI.com.
+      operationId: getWeather
+      parameters:
+      - description: City name for weather forecast
+        in: query
+        name: city
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getWeather_200_response'
+          description: Successful operation - current weather forecast returned
+        "400":
+          content: {}
+          description: Invalid request
+        "404":
+          content: {}
+          description: City not found
+      summary: Get current weather for a city
+      tags:
+      - weather
+      x-eov-operation-handler: controllers/WeatherController
+  /subscribe:
+    post:
+      description: Subscribe an email to receive weather updates for a specific city
+        with chosen frequency.
+      operationId: subscribe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/subscribe_request'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/subscribe_request'
+        required: true
+      responses:
+        "200":
+          content: {}
+          description: Subscription successful. Confirmation email sent.
+        "400":
+          content: {}
+          description: Invalid input
+        "409":
+          content: {}
+          description: Email already subscribed
+      summary: Subscribe to weather updates
+      tags:
+      - subscription
+      x-eov-operation-handler: controllers/SubscriptionController
+  /confirm/{token}:
+    get:
+      description: Confirms a subscription using the token sent in the confirmation
+        email.
+      operationId: confirmSubscription
+      parameters:
+      - description: Confirmation token
+        in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content: {}
+          description: Subscription confirmed successfully
+        "400":
+          content: {}
+          description: Invalid token
+        "404":
+          content: {}
+          description: Token not found
+      summary: Confirm email subscription
+      tags:
+      - subscription
+      x-eov-operation-handler: controllers/SubscriptionController
+  /unsubscribe/{token}:
+    get:
+      description: Unsubscribes an email from weather updates using the token sent
+        in emails.
+      operationId: unsubscribe
+      parameters:
+      - description: Unsubscribe token
+        in: path
+        name: token
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content: {}
+          description: Unsubscribed successfully
+        "400":
+          content: {}
+          description: Invalid token
+        "404":
+          content: {}
+          description: Token not found
+      summary: Unsubscribe from weather updates
+      tags:
+      - subscription
+      x-eov-operation-handler: controllers/SubscriptionController
+components:
+  schemas:
+    Weather:
+      properties:
+        temperature:
+          description: Current temperature
+          type: number
+        humidity:
+          description: Current humidity percentage
+          type: number
+        description:
+          description: Weather description
+          type: string
+      type: object
+    Subscription:
+      properties:
+        email:
+          description: Email address
+          type: string
+        city:
+          description: City for weather updates
+          type: string
+        frequency:
+          description: Frequency of updates
+          enum:
+          - hourly
+          - daily
+          type: string
+        confirmed:
+          description: Whether the subscription is confirmed
+          type: boolean
+      required:
+      - city
+      - email
+      - frequency
+      type: object
+    getWeather_200_response:
+      example:
+        temperature: 0.8008281904610115
+        humidity: 6.027456183070403
+        description: description
+      properties:
+        temperature:
+          description: Current temperature
+          type: number
+        humidity:
+          description: Current humidity percentage
+          type: number
+        description:
+          description: Weather description
+          type: string
+      type: object
+    subscribe_request:
+      properties:
+        email:
+          description: Email address to subscribe
+          type: string
+        city:
+          description: City for weather updates
+          type: string
+        frequency:
+          description: Frequency of updates (hourly or daily)
+          enum:
+          - hourly
+          - daily
+          type: string
+      required:
+      - city
+      - email
+      - frequency
+      type: object
+x-original-swagger-version: "2.0"
