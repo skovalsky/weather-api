@@ -1,0 +1,205 @@
+openapi: 3.0.0
+info:
+  description: Weather API application that allows users to subscribe to weather
+    updates for their city.
+  version: 1.0.0
+  title: Weather Forecast API
+tags:
+  - name: weather
+    description: Weather forecast operations
+  - name: subscription
+    description: Subscription management operations
+paths:
+  /weather:
+    get:
+      tags:
+        - weather
+      summary: Get current weather for a city
+      description: Returns the current weather forecast for the specified city using
+        WeatherAPI.com.
+      operationId: getWeather
+      parameters:
+        - name: city
+          in: query
+          description: City name for weather forecast
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation - current weather forecast returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  temperature:
+                    type: number
+                    description: Current temperature
+                  humidity:
+                    type: number
+                    description: Current humidity percentage
+                  description:
+                    type: string
+                    description: Weather description
+        "400":
+          description: Invalid request
+        "404":
+          description: City not found
+      x-s2o-consumes: []
+      x-s2o-produces:
+        - application/json
+  /subscribe:
+    post:
+      tags:
+        - subscription
+      summary: Subscribe to weather updates
+      description: Subscribe an email to receive weather updates for a specific city
+        with chosen frequency.
+      operationId: subscribe
+      parameters:
+        - name: email
+          in: formData
+          description: Email address to subscribe
+          required: true
+          type: string
+          x-s2o-delete: true
+        - name: city
+          in: formData
+          description: City for weather updates
+          required: true
+          type: string
+          x-s2o-delete: true
+        - name: frequency
+          in: formData
+          description: Frequency of updates (hourly or daily)
+          required: true
+          type: string
+          enum:
+            &a1
+            - hourly
+            - daily
+          x-s2o-delete: true
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                email:
+                  description: Email address to subscribe
+                  type: string
+                city:
+                  description: City for weather updates
+                  type: string
+                frequency:
+                  description: Frequency of updates (hourly or daily)
+                  type: string
+                  enum: *a1
+              required:
+                - email
+                - city
+                - frequency
+        required: true
+      responses:
+        "200":
+          description: Subscription successful. Confirmation email sent.
+        "400":
+          description: Invalid input
+        "409":
+          description: Email already subscribed
+      x-s2o-consumes:
+        - application/json
+        - application/x-www-form-urlencoded
+      x-s2o-produces:
+        - application/json
+  "/confirm/{token}":
+    get:
+      tags:
+        - subscription
+      summary: Confirm email subscription
+      description: Confirms a subscription using the token sent in the confirmation email.
+      operationId: confirmSubscription
+      parameters:
+        - name: token
+          in: path
+          description: Confirmation token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Subscription confirmed successfully
+        "400":
+          description: Invalid token
+        "404":
+          description: Token not found
+      x-s2o-consumes: []
+      x-s2o-produces:
+        - application/json
+  "/unsubscribe/{token}":
+    get:
+      tags:
+        - subscription
+      summary: Unsubscribe from weather updates
+      description: Unsubscribes an email from weather updates using the token sent in
+        emails.
+      operationId: unsubscribe
+      parameters:
+        - name: token
+          in: path
+          description: Unsubscribe token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Unsubscribed successfully
+        "400":
+          description: Invalid token
+        "404":
+          description: Token not found
+      x-s2o-consumes: []
+      x-s2o-produces:
+        - application/json
+servers:
+  - url: http://localhost:8080/api
+  - url: https://localhost:8080/api
+components:
+  schemas:
+    Weather:
+      type: object
+      properties:
+        temperature:
+          type: number
+          description: Current temperature
+        humidity:
+          type: number
+          description: Current humidity percentage
+        description:
+          type: string
+          description: Weather description
+    Subscription:
+      type: object
+      required:
+        - email
+        - city
+        - frequency
+      properties:
+        email:
+          type: string
+          description: Email address
+        city:
+          type: string
+          description: City for weather updates
+        frequency:
+          type: string
+          description: Frequency of updates
+          enum:
+            - hourly
+            - daily
+        confirmed:
+          type: boolean
+          description: Whether the subscription is confirmed
+x-s2o-consumes: []
+x-s2o-produces: []
