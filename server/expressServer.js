@@ -50,7 +50,7 @@ class ExpressServer {
     this.app.use(
       OpenApiValidator.middleware({
         apiSpec: this.openApiPath,
-        operationHandlers: path.join(__dirname),
+        operationHandlers: path.join(__dirname, 'controllers'), // Исправлено: явно указываем папку controllers
         fileUploader: { dest: config.FILE_UPLOAD_PATH },
       }),
     );

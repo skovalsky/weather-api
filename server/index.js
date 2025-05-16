@@ -1,3 +1,4 @@
+require('dotenv').config({ path: __dirname + '/.env' });
 const config = require('./config');
 const logger = require('./logger');
 const ExpressServer = require('./expressServer');

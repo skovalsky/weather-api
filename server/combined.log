@@ -8,3 +8,10 @@
 {"level":"error","message":"Express Server failure","service":"user-service","timestamp":"2025-05-16T12:56:32.932Z"}
 {"level":"error","service":"user-service","timestamp":"2025-05-16T12:56:32.939Z"}
 {"level":"info","message":"Express server running","service":"user-service","timestamp":"2025-05-16T12:56:56.803Z"}
+{"level":"info","message":"Express server running","service":"user-service","timestamp":"2025-05-16T14:22:56.172Z"}
+{"level":"info","message":"Express server running","service":"user-service","timestamp":"2025-05-16T14:34:48.491Z"}
+{"level":"info","message":"Express server running","service":"user-service","timestamp":"2025-05-16T14:40:47.919Z"}
+{"level":"info","message":"Express server running","service":"user-service","timestamp":"2025-05-16T14:42:40.617Z"}
+{"level":"info","message":"Express server running","service":"user-service","timestamp":"2025-05-16T14:46:15.844Z"}
+{"level":"info","message":"Express server running","service":"user-service","timestamp":"2025-05-16T15:11:35.969Z"}
+{"level":"info","message":"Express server running","service":"user-service","timestamp":"2025-05-16T15:16:30.174Z"}
