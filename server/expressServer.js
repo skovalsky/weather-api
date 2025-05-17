@@ -11,6 +11,11 @@ const bodyParser = require('body-parser');
 const OpenApiValidator = require('express-openapi-validator');
 const logger = require('./logger');
 const config = require('./config');
+const axios = require('axios');
+require('dotenv').config();
+
+const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+const WEATHER_API_URL = 'https://api.weatherapi.com/v1';
 
 class ExpressServer {
   constructor(port, openApiYaml) {
@@ -54,6 +59,56 @@ class ExpressServer {
         fileUploader: { dest: config.FILE_UPLOAD_PATH },
       }),
     );
+
+    // --- WeatherAPI Proxy Endpoints ---
+    this.app.get('/api/autocomplete', async (req, res) => {
+      const { q } = req.query;
+      if (!q) return res.status(400).json({ error: 'Missing query' });
+      try {
+        const response = await axios.get(`${WEATHER_API_URL}/search.json`, {
+          params: { key: WEATHER_API_KEY, q },
+        });
+        res.json(response.data);
+      } catch (e) {
+        res.status(500).json({ error: 'WeatherAPI autocomplete error', details: e.message });
+      }
+    });
+
+    this.app.get('/api/forecast', async (req, res) => {
+      const { q, days = 3, lang = 'ru' } = req.query;
+      if (!q) return res.status(400).json({ error: 'Missing city' });
+      try {
+        const response = await axios.get(`${WEATHER_API_URL}/forecast.json`, {
+          params: { key: WEATHER_API_KEY, q, days, lang },
+        });
+        res.json(response.data);
+      } catch (e) {
+        res.status(500).json({ error: 'WeatherAPI forecast error', details: e.message });
+      }
+    });
+
+    this.app.get('/api/ip', async (req, res) => {
+      try {
+        const response = await axios.get(`${WEATHER_API_URL}/ip.json`, {
+          params: { key: WEATHER_API_KEY, q: 'auto:ip' },
+        });
+        res.json(response.data);
+      } catch (e) {
+        res.status(500).json({ error: 'WeatherAPI ip error', details: e.message });
+      }
+    });
+    this.app.get('/api/myip', async (req, res) => {
+      try {
+        //const response = await axios.get('http://api.myip.com');
+        //logger.info('myip.com response:', response.data);
+        //res.json(response.data);
+        res.json({"ip":"146.150.65.20","country":"Ukraine","cc":"UA"})
+      } catch (e) {
+        logger.error('myip.com error:', e.message, e.response?.data);
+        res.status(500).json({ error: 'myip.com error', details: e.message });
+      }
+    });
+    // --- END WeatherAPI Proxy Endpoints ---
   }
 
   launch() {
