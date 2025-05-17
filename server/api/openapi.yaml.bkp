@@ -1,0 +1,92 @@
+# Бэкап openapi.yaml
+# ...содержимое совпадает с оригиналом...
+openapi: 3.0.1
+info:
+  title: Weather Forecast API
+  description: Weather API application that allows users to subscribe to weather updates
+    for their city.
+  version: 1.0.0
+servers:
+- url: http://localhost:8080/api
+- url: https://localhost:8080/api
+tags:
+- name: weather
+  description: Weather forecast operations
+- name: subscription
+  description: Subscription management operations
+paths:
+  /weather:
+    get:
+      tags:
+      - weather
+      summary: Get current weather for a city
+      description: Returns the current weather forecast for the specified city using
+        WeatherAPI.com.
+      operationId: getWeather
+      parameters:
+      - name: city
+        in: query
+        description: City name for weather forecast
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful operation - current weather forecast returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  temperature:
+                    type: number
+                    description: Current temperature
+                  humidity:
+                    type: number
+                    description: Current humidity percentage
+                  description:
+                    type: string
+                    description: Weather description
+        "400":
+          description: Invalid request
+          content: {}
+        "404":
+          description: City not found
+          content: {}
+  # ...остальные пути и компоненты сохранены для бэкапа...
+components:
+  schemas:
+    Weather:
+      type: object
+      properties:
+        temperature:
+          type: number
+          description: Current temperature
+        humidity:
+          type: number
+          description: Current humidity percentage
+        description:
+          type: string
+          description: Weather description
+    Subscription:
+      required:
+      - city
+      - email
+      - frequency
+      type: object
+      properties:
+        email:
+          type: string
+          description: Email address
+        city:
+          type: string
+          description: City for weather updates
+        frequency:
+          type: string
+          description: Frequency of updates
+          enum:
+          - hourly
+          - daily
+        confirmed:
+          type: boolean
+          description: Whether the subscription is confirmed

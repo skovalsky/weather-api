@@ -21,6 +21,8 @@ paths:
       description: Returns the current weather forecast for the specified city using
         WeatherAPI.com.
       operationId: getWeather
+      x-openapi-router-controller: WeatherController
+      x-eov-operation-handler: WeatherController
       parameters:
       - name: city
         in: query
@@ -59,6 +61,8 @@ paths:
       description: Subscribe an email to receive weather updates for a specific city
         with chosen frequency.
       operationId: subscribe
+      x-openapi-router-controller: SubscriptionController
+      x-eov-operation-handler: SubscriptionController
       requestBody:
         content:
           application/json:
@@ -120,6 +124,8 @@ paths:
       description: Confirms a subscription using the token sent in the confirmation
         email.
       operationId: confirmSubscription
+      x-openapi-router-controller: SubscriptionController
+      x-eov-operation-handler: SubscriptionController
       parameters:
       - name: token
         in: path
@@ -145,6 +151,8 @@ paths:
       description: Unsubscribes an email from weather updates using the token sent
         in emails.
       operationId: unsubscribe
+      x-openapi-router-controller: SubscriptionController
+      x-eov-operation-handler: SubscriptionController
       parameters:
       - name: token
         in: path
@@ -198,4 +206,3 @@ components:
         confirmed:
           type: boolean
           description: Whether the subscription is confirmed
-x-original-swagger-version: "2.0"
