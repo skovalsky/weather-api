@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   TextField,
   Button,
@@ -17,6 +17,7 @@ import axios from "axios";
 
 const WeatherPage = () => {
   const [city, setCity] = useState("");
+  const [country, setCountry] = useState("");
   const [cityOptions, setCityOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [weather, setWeather] = useState(null);
@@ -25,44 +26,58 @@ const WeatherPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [error, setError] = useState("");
-  const [geoLoading, setGeoLoading] = useState(false);
-  const [userIp, setUserIp] = useState("");
-  const [userCountry, setUserCountry] = useState("");
-  const [userCity, setUserCity] = useState("");
-  const [ipLoading, setIpLoading] = useState(false);
-  const [ipError, setIpError] = useState("");
+  const [startLoading, setStartLoading] = useState(true);
+  const [startError, setStartError] = useState("");
+  const [cityInput, setCityInput] = useState("");
+  const [cityFieldFocused, setCityFieldFocused] = useState(false);
+  const debounceTimeout = useRef();
 
-  // Автодополнение города
+  // Получить стартовые данные (город, страна, прогноз)
   useEffect(() => {
-    if (!city) return;
-    let active = true;
-    setLoading(true);
-    axios
-      .get(`/api/autocomplete`, {
-        params: { q: city },
-      })
-      .then((res) => {
-        if (active) setCityOptions(res.data || []);
-      })
-      .catch(() => setCityOptions([]))
-      .finally(() => setLoading(false));
-    return () => {
-      active = false;
-    };
-  }, [city]);
-
-  // Получить город по IP/геолокации
-  useEffect(() => {
-    setGeoLoading(true);
-    axios
-      .get(`/api/ip`)
-      .then((res) => {
+    setStartLoading(true);
+    setStartError("");
+    axios.get("/api/startdata") // Исправлено: всегда используем абсолютный путь /api/startdata
+      .then(res => {
         if (res.data && res.data.city) {
           setCity(res.data.city);
+          setCountry(res.data.country || "");
+          setWeather(res.data.forecast || null);
+        } else {
+          setStartError(res.data && res.data.warning ? res.data.warning : "Город не определён. Введите вручную.");
         }
       })
-      .finally(() => setGeoLoading(false));
+      .catch(() => setStartError("Ошибка при определении города. Введите вручную."))
+      .finally(() => setStartLoading(false));
   }, []);
+
+  // Автодополнение города с дебаунсом
+  useEffect(() => {
+    if (!cityFieldFocused) return;
+    if (!cityInput || cityInput.length < 3) {
+      setCityOptions([]);
+      return;
+    }
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
+      let active = true;
+      setLoading(true);
+      axios
+        .get(`/api/autocomplete`, {
+          params: { q: cityInput },
+        })
+        .then((res) => {
+          if (active) setCityOptions(Array.isArray(res.data) ? res.data : []);
+        })
+        .catch(() => setCityOptions([]))
+        .finally(() => setLoading(false));
+      return () => {
+        active = false;
+      };
+    }, 1000); // 1000 мс = 1 секунда задержки
+    return () => {
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    };
+  }, [cityInput, cityFieldFocused]);
 
   // Получить прогноз по выбранному городу
   const fetchWeather = (selectedCity) => {
@@ -101,57 +116,36 @@ const WeatherPage = () => {
       .finally(() => setSubmitting(false));
   };
 
-  // Получить внешний IP, страну и код страны через backend-прокси
-  useEffect(() => {
-    setIpLoading(true);
-    setIpError("");
-    axios.get("/api/myip")
-      .then(res => {
-        if (res.data) {
-          setUserIp(res.data.ip || "");
-          setUserCountry(res.data.country || "");
-          setUserCity(res.data.cc || "");
-        }
-      })
-      .catch(() => {
-        setUserIp("");
-        setUserCountry("");
-        setUserCity("");
-        setIpError("Не удалось определить внешний IP");
-      })
-      .finally(() => setIpLoading(false));
-    // eslint-disable-next-line
-  }, []);
-
   return (
     <Box className="container">
       <Typography variant="h4" gutterBottom>
         Погода и подписка
       </Typography>
-      <Box mb={2}>
-        <Paper elevation={1} sx={{ p: 1, mb: 2, background: '#f7f7f7' }}>
-          {ipLoading ? (
-            <Box display="flex" alignItems="center" gap={1}>
-              <CircularProgress size={18} />
-              <Typography variant="body2">Определяем внешний IP...</Typography>
-            </Box>
-          ) : ipError ? (
-            <Alert severity="error" sx={{ my: 1 }}>{ipError}</Alert>
-          ) : (
-            <Typography variant="body2">
-              Ваш внешний IP: <b>{userIp || 'не определён'}</b><br/>
-              Страна: <b>{userCountry || 'не определена'}</b><br/>
-              Код страны: <b>{userCity || 'не определён'}</b>
-            </Typography>
-          )}
-        </Paper>
-      </Box>
+      {startLoading ? (
+        <Box display="flex" alignItems="center" gap={1} mb={2}>
+          <CircularProgress size={18} />
+          <Typography variant="body2">Определяем ваш город...</Typography>
+        </Box>
+      ) : startError ? (
+        <Alert severity="warning" sx={{ my: 2 }}>{startError}</Alert>
+      ) : null}
       <Box mb={2}>
         <Autocomplete
           freeSolo
-          options={cityOptions.map((opt) => opt.name + (opt.country ? ", " + opt.country : ""))}
+          options={Array.isArray(cityOptions) ? cityOptions.map((opt) => opt.name + (opt.country ? ", " + opt.country : "")) : []}
           inputValue={city}
-          onInputChange={(e, value) => setCity(value)}
+          onInputChange={(e, value, reason) => {
+            setCityInput(value);
+            if (reason === 'input') setCity(value);
+            if (reason === 'clear') {
+              setCity("");
+              setCityInput("");
+              setCityOptions([]);
+              setWeather(null);
+            }
+          }}
+          onFocus={() => setCityFieldFocused(true)}
+          onBlur={() => setCityFieldFocused(false)}
           onChange={handleCityChange}
           loading={loading}
           renderInput={(params) => (
@@ -172,9 +166,13 @@ const WeatherPage = () => {
             />
           )}
         />
-        {geoLoading && <Typography variant="body2">Определяем ваш город...</Typography>}
+        {country && city && (
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            Страна: <b>{country}</b>
+          </Typography>
+        )}
       </Box>
-      {weather && (
+      {weather && weather.location && weather.forecast && (
         <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
           <Typography variant="h6">Погода в {weather.location.name}, {weather.location.country}</Typography>
           <Box display="flex" gap={2}>

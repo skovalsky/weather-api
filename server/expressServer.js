@@ -52,14 +52,14 @@ class ExpressServer {
       res.status(200);
       res.json(req.query);
     });
-    this.app.use(
+/*    this.app.use(
       OpenApiValidator.middleware({
         apiSpec: this.openApiPath,
         operationHandlers: path.join(__dirname, 'controllers'), // Исправлено: явно указываем папку controllers
         fileUploader: { dest: config.FILE_UPLOAD_PATH },
       }),
     );
-
+*/
     // --- WeatherAPI Proxy Endpoints ---
     this.app.get('/api/autocomplete', async (req, res) => {
       const { q } = req.query;
@@ -99,15 +99,95 @@ class ExpressServer {
     });
     this.app.get('/api/myip', async (req, res) => {
       try {
-        //const response = await axios.get('http://api.myip.com');
-        //logger.info('myip.com response:', response.data);
-        //res.json(response.data);
-        res.json({"ip":"146.150.65.20","country":"Ukraine","cc":"UA"})
+        const response = await axios.get('http://api.myip.com');
+        logger.info('myip.com response:', response.data);
+        res.json(response.data);
+        //res.json({"ip":"146.150.65.20","country":"Ukraine","cc":"UA"})
       } catch (e) {
         logger.error('myip.com error:', e.message, e.response?.data);
         res.status(500).json({ error: 'myip.com error', details: e.message });
       }
     });
+
+    // --- STARTDATA ENDPOINT ---
+    this.app.get('/api/startdata', async (req, res) => {
+      try {
+        // Получаем IP пользователя (учитываем x-forwarded-for)
+        let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.ip;
+        if (Array.isArray(ip)) ip = ip[0];
+        if (typeof ip === 'string' && ip.includes(',')) ip = ip.split(',')[0].trim();
+        if (ip && ip.startsWith('::ffff:')) ip = ip.replace('::ffff:', '');
+
+        // Проверка на приватный/локальный IP
+        const isPrivate = (ip) => {
+          return false;
+          if (!ip) return true;
+          // IPv4
+          if (/^(10\.|127\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(ip)) return true;
+          // IPv6 localhost
+          if (ip === '::1' || ip === '0:0:0:0:0:0:0:1') return true;
+          // IPv6 link-local
+          if (/^fe80:/i.test(ip)) return true;
+          // Empty or unknown
+          if (ip === '::' || ip === '0.0.0.0') return true;
+          return false;
+        };
+        ip = '46.150.65.200'; // Установим IP для тестирования
+        /*if (isPrivate(ip)) {
+          return res.json({
+            city: null,
+            country: null,
+            forecast: null,
+            warning: 'Город не определён. Введите город вручную.'
+          });
+        }*/
+
+        // Получаем город и страну по IP через WeatherAPI
+        const locResp = await axios.get(`${WEATHER_API_URL}/ip.json`, {
+          params: { key: WEATHER_API_KEY, q: ip }
+        });
+        // DEBUG: Вернуть сырые данные для анализа
+        // return res.json({
+        //   debug: {
+        //     url: `${WEATHER_API_URL}/ip.json`,
+        //     params: { key: WEATHER_API_KEY, q: ip },
+        //     raw: locResp.data
+        //   }
+        // });
+
+        const loc = locResp.data && locResp.data.location ? locResp.data.location : locResp.data;
+        if (!loc || !loc.city) {
+          return res.json({
+            city: null,
+            country: null,
+            forecast: null,
+            warning: 'Город не определён. Введите город вручную.'
+          });
+        }
+        // Получаем прогноз на 3 дня по найденному городу
+        const forecastResp = await axios.get(`${WEATHER_API_URL}/forecast.json`, {
+          params: { key: WEATHER_API_KEY, q: loc.city, days: 3, lang: 'ru' }
+        });
+        res.json({
+          city: loc.city,
+          country: loc.country_name || loc.country,
+          forecast: forecastResp.data && forecastResp.data.forecast,
+          warning: null
+        });
+      } catch (e) {
+        logger.error('startdata error:', e.message, e.response?.data);
+        res.status(500).json({ error: 'startdata error', details: e.message });
+      }
+    });
+    // --- END STARTDATA ENDPOINT ---
+
+    this.app.use(
+      OpenApiValidator.middleware({
+        apiSpec: this.openApiPath,
+        operationHandlers: path.join(__dirname, 'controllers'), // Исправлено: явно указываем папку controllers
+        fileUploader: { dest: config.FILE_UPLOAD_PATH },
+      }),
+    );
     // --- END WeatherAPI Proxy Endpoints ---
   }
 
