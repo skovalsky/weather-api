@@ -36,12 +36,21 @@ const WeatherPage = () => {
   useEffect(() => {
     setStartLoading(true);
     setStartError("");
-    axios.get("/api/startdata") // Исправлено: всегда используем абсолютный путь /api/startdata
+    axios.get("/api/startdata")
       .then(res => {
         if (res.data && res.data.city) {
           setCity(res.data.city);
           setCountry(res.data.country || "");
-          setWeather(res.data.forecast || null);
+          // Если прогноз уже есть в ответе, сразу сохраняем его
+          if (res.data.forecast) {
+            setWeather({
+              location: { name: res.data.city, country: res.data.country },
+              forecast: res.data.forecast
+            });
+          } else {
+            // Если нет прогноза — подгружаем отдельно
+            fetchWeather(res.data.city);
+          }
         } else {
           setStartError(res.data && res.data.warning ? res.data.warning : "Город не определён. Введите вручную.");
         }
@@ -129,6 +138,26 @@ const WeatherPage = () => {
       ) : startError ? (
         <Alert severity="warning" sx={{ my: 2 }}>{startError}</Alert>
       ) : null}
+      {/* Прогноз погоды на 3 дня — всегда над полем города */}
+      {weather && weather.location && weather.forecast && (
+        <Paper elevation={0} sx={{ p: 2, mb: 2, background: '#91bf9d9c' }}>
+          <Typography variant="h6">Погода в {weather.location.name}, {weather.location.country}</Typography>
+          <Box display="flex" gap={2} width="100%">
+            {weather.forecast.forecastday.map((day) => (
+              <Box
+                key={day.date}
+                textAlign="center"
+                sx={{ flex: 1, minWidth: 0, background: '#f5f7fa', borderRadius: 2, p: 1 }}
+              >
+                <Typography variant="subtitle2">{day.date}</Typography>
+                <img src={day.day.condition.icon} alt="icon" />
+                <Typography>{day.day.avgtemp_c}°C</Typography>
+                <Typography variant="body2">{day.day.condition.text}</Typography>
+              </Box>
+            ))}
+          </Box>
+        </Paper>
+      )}
       <Box mb={2}>
         <Autocomplete
           freeSolo
@@ -172,21 +201,6 @@ const WeatherPage = () => {
           </Typography>
         )}
       </Box>
-      {weather && weather.location && weather.forecast && (
-        <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h6">Погода в {weather.location.name}, {weather.location.country}</Typography>
-          <Box display="flex" gap={2}>
-            {weather.forecast.forecastday.map((day) => (
-              <Box key={day.date} textAlign="center">
-                <Typography variant="subtitle2">{day.date}</Typography>
-                <img src={day.day.condition.icon} alt="icon" />
-                <Typography>{day.day.avgtemp_c}°C</Typography>
-                <Typography variant="body2">{day.day.condition.text}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Paper>
-      )}
       <form onSubmit={handleSubscribe}>
         <Typography variant="h6" gutterBottom>Подписка на рассылку</Typography>
         <TextField
