@@ -1,0 +1,20 @@
+# .gitignore
+
+# Node modules
+node_modules/
+server/node_modules/
+
+# Логи
+*.log
+server/*.log
+
+# SQLite базы
+*.sqlite3
+
+# Сборки
+dist/
+build/
+
+# .env и другие секреты
+.env
+.env.*

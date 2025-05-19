@@ -23,8 +23,11 @@
     "express": "^4.16.4",
     "express-openapi-validator": "^4.13.8",
     "js-yaml": "^3.3.0",
+    "knex": "^3.1.0",
+    "nodemailer": "^7.0.3",
     "ono": "^5.0.1",
     "openapi-sampler": "^1.0.0-beta.15",
+    "sqlite3": "^5.1.7",
     "swagger-ui-express": "^4.0.2",
     "winston": "^3.2.1"
   },

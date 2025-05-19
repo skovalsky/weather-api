@@ -166,7 +166,13 @@ const WeatherPage = () => {
         email: safeEmail,
         frequency: freq,
       })
-      .then(() => setSubscribed(true))
+      .then((res) => {
+        if (res.data && res.data.success) {
+          setSubscribed(true);
+        } else {
+          setError("Subscription error. Please check your email and try again.");
+        }
+      })
       .catch(() => setError("Subscription error. Please check your email and try again."))
       .finally(() => setSubmitting(false));
   };
@@ -174,7 +180,7 @@ const WeatherPage = () => {
   // Email and city validation for subscribe
   const isEmailValid = emailRegex.test(email);
   // Для валидации используем только часть до запятой
-  const cityForValidation = city && city.includes(',') ? city.split(',')[0].trim() : city;
+  const cityForValidation = city;/* && city.includes(',') ? city.split(',')[0].trim() : city; */
   const isCityValid = cityRegex.test(cityForValidation);
 
   return (

@@ -13,7 +13,10 @@ const confirmSubscription = async (request, response) => {
 };
 
 const subscribe = async (request, response) => {
-  await Controller.handleRequest(request, response, service.subscribe);
+  const logger = require('../logger');
+  logger.info('[CONTROLLER] request.body:', request.body);
+  // Передаём плоское тело запроса как subscribeRequest
+  await Controller.handleRequest(request, response, (params) => service.subscribe({ subscribeRequest: request.body }));
 };
 
 const unsubscribe = async (request, response) => {
